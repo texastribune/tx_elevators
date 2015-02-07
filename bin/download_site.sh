@@ -1,28 +1,15 @@
+#!/usr/bin/env bash
+
 # Instructions:
 #
 # run from project root directory
 
-set +e
-MANAGE="python ./example_project/manage.py"
-PORT=8008
-
-
-DEBUG=0 $MANAGE runserver --nothreading --noreload $PORT &
-pid=$!
-echo "runserver pid: $pid"
-
-# make sure to kill the server if terminated early
-trap "kill $pid; echo bye $pid" EXIT
+# Make sure the docker image is up to date
+make build gunicorn
+PORT=$(docker port elevators-site 8000 | cut -d : -f 2)
 
 # give time for the servers to get up
-sleep 1
-
-$MANAGE collectstatic --noinput
+sleep 3
 
 mkdir -p site
 cd site && wget -r localhost:$PORT --force-html -e robots=off -nH -nv --max-redirect 0
-
-# kill server, run in a subprocess so we can suppress "Terminated" message
-(kill $pid 2>&1) > /dev/null
-
-echo "bye"
