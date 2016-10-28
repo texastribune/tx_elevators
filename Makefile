@@ -21,11 +21,13 @@ resetdb: ## Reset the dev database
 dumpgeo: ## Dump building geo data
 	$(MANAGE) dumpgeo > data/geocoding.csv
 
+loadgeo: ## Load saved geo data
+	$(MANAGE) loadgeo data/geocoding.csv
+
 scrape: ## Scrape new data
 	cd data && $(MAKE) $(MFLAGS) clean elevator_data_file.csv
 	python tx_elevators/scripts/scrape.py data/elevator_data_file.csv
 	@echo "should geocode the top 1000 too: $(MANAGE) geocode"
-
 
 # timing for trivial import real	1m51.994s
 # timing for a fresh import real	4m15.279s
@@ -55,15 +57,16 @@ web/stop: web.pid
 # FINISHED --2016-04-01 04:48:54--
 # Total wall clock time: 4m 59s
 # Downloaded: 26757 files, 126M in 0.1s (971 MB/s)
+site: ## Scrape the site
 site: web/start
 	mkdir -p ._site
 	cd ._site && wget -r localhost:$(PORT) --force-html -e robots=off -nH -nv --max-redirect 0 || true
 	@$(MAKE) web/stop
 
-serve:
+serve: ## Serve from the scraped site on port 8088
 	cd ._site && python -m SimpleHTTPServer 8088
 
-upload:
+upload: ## Upload the scraped site to s3
 	aws s3 sync ._site s3://$(AWS_BUCKET_NAME)/ \
 	  --cache-control "max-age=2592000" \
 	  --acl "public-read"
